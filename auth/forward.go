@@ -31,7 +31,17 @@ func Forward(forward *types.Forward, w http.ResponseWriter, r *http.Request, nex
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	forwardReq.Header = r.Header
+
+	for k, v := range r.Header {
+		forwardReq.Header[k] = v
+	}
+
+	protocol := "http"
+	if r.TLS != nil {
+		protocol = "https"
+	}
+
+	forwardReq.Header.Set("Forwarded", "for=\""+r.RemoteAddr+"\";proto="+protocol+";host=\""+r.Host+"\";path=\""+r.URL.String()+"\"")
 
 	forwardResponse, forwardErr := httpClient.Do(forwardReq)
 	if forwardErr != nil {
