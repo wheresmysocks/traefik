@@ -3,6 +3,7 @@ package auth
 import (
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/containous/traefik/log"
 	"github.com/containous/traefik/types"
@@ -53,6 +54,16 @@ func Forward(forward *types.Forward, w http.ResponseWriter, r *http.Request, nex
 		w.WriteHeader(forwardResponse.StatusCode)
 		w.Write(body)
 		return
+	}
+
+	// Copy over any headers matching X-Traefik- to the request, sans X-Traefik-.
+
+	for header, values := range forwardResponse.Header {
+		if strings.HasPrefix(header, "X-Traefik-") {
+			for _, value := range values {
+				r.Header.Add(strings.TrimPrefix(header, "X-Traefik-"), value)
+			}
+		}
 	}
 
 	r.RequestURI = r.URL.RequestURI()
